@@ -169,12 +169,19 @@ public class CommandParser {
         String freq = o.has("freq") ? o.get("freq").getAsString() : "每日";
         String color = o.has("color") ? o.get("color").getAsString() : "#FFD54F";
         String timeStr = o.has("time") ? o.get("time").getAsString() : null; // e.g. "08:00" or "8:00"
+        String days = o.has("days") ? o.get("days").getAsString() : null;    // e.g. "124" for Mon+Tue+Thu
 
-        // Build schedule_config JSON with optional time
+        // Build schedule_config JSON with optional time and days
+        String resolvedDays = ""; // resolved weekdays for "每周" mode
         StringBuilder cfg = new StringBuilder();
         switch (freq) {
             case "每周":
-                cfg.append("{\"mode\":\"weekly\",\"days\":\"12345\"");
+                cfg.append("{\"mode\":\"weekly\"");
+                // Parse days: accept digit string ("124") or Chinese ("一二四")
+                resolvedDays = parseDays(days, desc);
+                if (!resolvedDays.isEmpty()) {
+                    cfg.append(",\"days\":\"").append(resolvedDays).append("\"");
+                }
                 break;
             default:
                 cfg.append("{\"mode\":\"daily\"");
@@ -191,10 +198,11 @@ public class CommandParser {
         HabitItem h = new HabitItem(name, desc, icon, freq, color, scheduleConfig, System.currentTimeMillis());
         h.user_id = userId;
         long id = db.habitDao().insert(h);
-        Log.d(TAG, "createHabit: name=" + name + " freq=" + freq + " time=" + timeStr + " cfg=" + scheduleConfig + " id=" + id);
+        Log.d(TAG, "createHabit: name=" + name + " freq=" + freq + " days=" + resolvedDays + " time=" + timeStr + " cfg=" + scheduleConfig + " id=" + id);
 
+        String daysDisplay = resolvedDays.isEmpty() ? "" : " " + daysToChineseDisplay(resolvedDays);
         String timeDisplay = timeMinutes >= 0 ? " " + timeStr + "提醒" : "";
-        return id > 0 ? "✅ 已创建习惯 #" + id + "：「" + name + "」" + freq + timeDisplay + "打卡"
+        return id > 0 ? "✅ 已创建习惯 #" + id + "：「" + name + "」" + freq + daysDisplay + timeDisplay + "打卡"
                       : "❌ 创建习惯失败";
     }
 
@@ -212,6 +220,63 @@ public class CommandParser {
             }
         } catch (NumberFormatException ignored) {}
         return -1;
+    }
+
+    /**
+     * Parse days-of-week from the AI-provided string. Accepts two formats:
+     *   Digit format:  "124"  → "124" (Mon+Tue+Thu)
+     *   Chinese format: "周一、二、四" → "124"
+     * Also falls back to scanning the desc field for day names if days is empty.
+     * Returns a string of digits 1-7, or empty if nothing recognized.
+     */
+    private static String parseDays(String days, String desc) {
+        // 1) If days is already a pure digit string, validate and return
+        if (days != null && !days.isEmpty()) {
+            String cleaned = days.replaceAll("[^1-7]", "");
+            if (!cleaned.isEmpty()) return cleaned;
+            // Try parsing Chinese day names from days param
+            String fromChinese = parseChineseDays(days);
+            if (!fromChinese.isEmpty()) return fromChinese;
+        }
+        // 2) Fallback: try to extract days from desc (e.g. "周一、二、四")
+        if (desc != null && !desc.isEmpty()) {
+            String fromDesc = parseChineseDays(desc);
+            if (!fromDesc.isEmpty()) return fromDesc;
+        }
+        return "";
+    }
+
+    /** Parse Chinese day-of-week names from text. Returns digit string or "". */
+    private static String parseChineseDays(String text) {
+        StringBuilder result = new StringBuilder();
+        // Map: Chinese day names to digit
+        String[] patterns = {"周一", "周二", "周三", "周四", "周五", "周六", "周日",
+                             "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日",
+                             "周1", "周2", "周3", "周4", "周5", "周6", "周7"};
+        int[] digits =       {1, 2, 3, 4, 5, 6, 7,
+                              1, 2, 3, 4, 5, 6, 7,
+                              1, 2, 3, 4, 5, 6, 7};
+        for (int i = 0; i < patterns.length; i++) {
+            if (text.contains(patterns[i]) && result.indexOf(String.valueOf(digits[i])) < 0) {
+                result.append(digits[i]);
+            }
+        }
+        return result.toString();
+    }
+
+    /** Convert digit day string to Chinese display: "124" → "周一、二、四". */
+    private static String daysToChineseDisplay(String days) {
+        if (days == null || days.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        String[] names = {"", "一", "二", "三", "四", "五", "六", "日"};
+        for (char c : days.toCharArray()) {
+            int d = Character.digit(c, 10);
+            if (d >= 1 && d <= 7) {
+                if (sb.length() > 0) sb.append("、");
+                sb.append(names[d]);
+            }
+        }
+        return "周" + sb.toString();
     }
 
     private String execDeleteHabit(JsonObject o) {

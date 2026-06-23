@@ -50,49 +50,41 @@ public class ChatFragment extends Fragment {
         String todayStr = today.getYear() + "年" + today.getMonthValue() + "月" + today.getDayOfMonth() + "日";
         String weekday = today.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.CHINESE);
         java.time.LocalDate tomorrow = today.plusDays(1);
-        String exampleDue = tomorrow.getYear() + "-" +
-                String.format("%02d", tomorrow.getMonthValue()) + "-" +
-                String.format("%02d", tomorrow.getDayOfMonth()) + " 15:00";
 
         return
-            // ── P0: CRITICAL — operation commands (must appear first) ──
-            "⚠️ 核心规则：只要用户要求创建/删除/完成/查询待办、习惯或番茄钟，你的每条回复末尾都必须包含 [CMD]命令[/CMD]！\n" +
-            "不包含命令的回复将被系统拒绝并强制重试。命令格式：\n" +
-            "格式：[CMD]{\"action\":\"动作\",\"参数\":\"值\"}[/CMD]\n" +
-            "命令和自然语言回复写在同一条消息里。举例：\n" +
-            "  用户:「帮我删除买菜待办」\n" +
-            "  你的回复:「好的，已帮你删除。[CMD]{\"action\":\"delete_todo\",\"title\":\"买菜\"}[/CMD]」\n\n" +
-            "### 全部命令（精确字段名）：\n" +
+            // ── P0: CRITICAL — operation commands ──
+            "🔴 核心规则：当用户要求创建/删除/完成/查询待办、习惯或番茄钟时，你必须在回复末尾附加 [CMD]命令[/CMD]！\n" +
+            "没有命令的回复会导致操作无法执行。\n\n" +
+            "命令格式：[CMD]{\"action\":\"动作\",\"参数\":\"值\"}[/CMD]\n" +
+            "命令和自然语言写在同一消息里，命令放末尾。\n\n" +
+            "### 命令列表：\n" +
             "  create_todo → title, note(可选), priority(1低/2中/3高), due(可选,格式yyyy-MM-dd HH:mm)\n" +
-            "  delete_todo → title  (用标题关键词匹配)  或  id  (用编号)\n" +
+            "  delete_todo → title(标题关键词) 或 id(编号)\n" +
             "  complete_todo → title 或 id\n" +
-            "  list_todos → (无参数)\n" +
-            "  create_habit → name, freq(每日/每周), time(可选,HH:mm格式如08:00或20:30), desc(可选), icon(可选)\n" +
+            "  list_todos → 无参数\n" +
+            "  create_habit → name, freq(每日/每周), days(每周时必填,数字1-7对应周一到周日,如\"124\"=周一/二/四), time(可选,HH:mm如09:00), desc(可选)\n" +
             "  delete_habit → name 或 id\n" +
-            "  list_habits → (无参数)\n" +
+            "  list_habits → 无参数\n" +
             "  create_pomo → name, minutes(如25)\n" +
             "  delete_pomo → name 或 id\n" +
-            "  list_pomos → (无参数)\n\n" +
-            "### 示例（请严格模仿）：\n" +
-            "  创建待办: [CMD]{\"action\":\"create_todo\",\"title\":\"买菜\",\"priority\":2,\"due\":\"" + exampleDue + "\"}[/CMD]\n" +
-            "  删除待办: [CMD]{\"action\":\"delete_todo\",\"title\":\"买菜\"}[/CMD]\n" +
-            "  创建习惯(带时间): [CMD]{\"action\":\"create_habit\",\"name\":\"晨跑\",\"freq\":\"每日\",\"time\":\"07:00\"}[/CMD]\n" +
-            "  创建习惯(无时间): [CMD]{\"action\":\"create_habit\",\"name\":\"阅读\",\"freq\":\"每日\"}[/CMD]\n" +
-            "  创建番茄钟: [CMD]{\"action\":\"create_pomo\",\"name\":\"刷题\",\"minutes\":30}[/CMD]\n\n" +
-            "### 规则：\n" +
-            "  ⏰ 今天=" + todayStr + " " + weekday + "  明天=" +
-                (tomorrow.getMonthValue() + "月" + tomorrow.getDayOfMonth() + "日") +
-                "  后天=" + (today.plusDays(2).getMonthValue() + "月" + today.plusDays(2).getDayOfMonth() + "日") + "\n" +
-            "  回复简短友好(≤200字)，命令放在末尾，不要在命令外解释命令内容。\n\n" +
+            "  list_pomos → 无参数\n\n" +
+            "### 示例：\n" +
+            "用户:「创建待办买菜」→ 你:「好的，已创建。[CMD]{\"action\":\"create_todo\",\"title\":\"买菜\",\"priority\":1}[/CMD]」\n" +
+            "用户:「删除买菜」→ 你:「好的。[CMD]{\"action\":\"delete_todo\",\"title\":\"买菜\"}[/CMD]」\n" +
+            "用户:「每天7点晨跑」→ 你:「好的。[CMD]{\"action\":\"create_habit\",\"name\":\"晨跑\",\"freq\":\"每日\",\"time\":\"07:00\"}[/CMD]」\n" +
+            "用户:「每周一三五早上8点阅读」→ 你:「好的。[CMD]{\"action\":\"create_habit\",\"name\":\"阅读\",\"freq\":\"每周\",\"days\":\"135\",\"time\":\"08:00\"}[/CMD]」\n\n" +
+            "⏰ 今天=" + todayStr + " " + weekday +
+            "  明天=" + (tomorrow.getMonthValue() + "月" + tomorrow.getDayOfMonth() + "日") +
+            "  后天=" + (today.plusDays(2).getMonthValue() + "月" + today.plusDays(2).getDayOfMonth() + "日") + "\n" +
+            "回复简短(≤100字)，命令放在末尾。\n\n" +
             // ── P1: Software overview ──
             "## 关于本软件\n" +
-            "你是「待办清单」App的内置助手。App有5个底部标签：习惯、待办、番茄钟、AI助手、我的。\n" +
-            "· 习惯：日历+打卡，支持每日/每周/指定日期，可设提醒\n" +
-            "· 待办：列表+优先级(高/中/低)+截止日期，左滑删除，勾选完成\n" +
-            "· 番茄钟：圆形倒计时，前台服务保活，通知栏操作，可自定义时长\n" +
-            "· AI助手：即本对话，DeepSeek智能助手，可操作习惯/待办/番茄钟\n" +
-            "· 我的：头像/登录/统计面板/📍位置信息/备份管理/API Key设置/密码锁\n" +
-            "通用：所有数据本地存储(Room)，支持AI解析待办文本，多端冲突强制下线。";
+            "你是「待办清单」App内置助手。5个标签：习惯、待办、番茄钟、AI助手、我的。\n" +
+            "· 习惯：日历+打卡，每日/每周，可设提醒\n" +
+            "· 待办：优先级+截止日期，左滑删除，勾选完成\n" +
+            "· 番茄钟：倒计时，前台服务，通知栏操作\n" +
+            "· 我的：头像/统计/备份/密码锁/API设置\n" +
+            "所有数据本地存储(Room)。";
     }
 
     private RecyclerView recyclerChat;
@@ -308,17 +300,25 @@ public class ChatFragment extends Fragment {
             String execLog = cmdResult.execLog;
             boolean hadCommands = !execLog.isEmpty();
 
-            // Show execution result to user — prepend execLog to display text
-            if (hadCommands) {
-                displayText = execLog + "\n\n" + displayText;
-            }
             Log.d(TAG, "Commands: " + (hadCommands ? execLog : "(none)"));
 
-            // Record the AI reply in conversation context
-            conversation.add(new ChatRequest.Message("assistant", displayText));
+            // Build display text for user (cleaned, no CMD tags, exec result at top)
+            String userDisplayText = displayText;
+            if (hadCommands) {
+                userDisplayText = execLog + "\n\n" + displayText;
+            }
+
+            // Store in conversation context: include the FULL AI response (with CMD tags)
+            // so the AI sees command usage patterns in history, preventing degradation.
+            // Also append execution result so AI knows commands were processed.
+            String contextText = replyText;
+            if (hadCommands) {
+                contextText += "\n[已执行: " + execLog + "]";
+            }
+            conversation.add(new ChatRequest.Message("assistant", contextText));
 
             long now = System.currentTimeMillis();
-            ChatMessage aiMsg = new ChatMessage(displayText, ChatMessage.TYPE_RECEIVED, now, getSessionId());
+            ChatMessage aiMsg = new ChatMessage(userDisplayText, ChatMessage.TYPE_RECEIVED, now, getSessionId());
             db.chatMessageDao().insert(aiMsg);
 
             handler.post(() -> {
@@ -329,36 +329,40 @@ public class ChatFragment extends Fragment {
                 etInput.setEnabled(true);
             });
 
-            // If commands were executed, auto-send result to AI for natural follow-up
-            if (hadCommands) {
-                String contextMsg = "系统已执行以下操作：\n" + execLog +
-                        "\n请用友好的中文确认这些操作结果（简短，不要再次执行命令）。";
-                conversation.add(new ChatRequest.Message("user", contextMsg));
-                handler.postDelayed(() -> sendFollowUp(contextMsg), 500);
-            } else if (userLikelyWantedAction()) {
-                // AI replied without a command block but the user clearly requested an action.
-                // Re-prompt the AI to issue a proper command.
-                Log.w(TAG, "AI missed command, re-prompting");
-                String remind = "你刚才没有在回复中包含 [CMD] 命令块！用户要求执行操作，"
-                        + "你必须按之前规定的格式发出命令。请现在补发命令（仅发命令，不要其他文字）：";
+            // If AI didn't issue a command but user clearly wanted an action, retry once
+            if (!hadCommands && userLikelyWantedAction()) {
+                Log.w(TAG, "AI missed command, retrying with reminder");
+                // Remove the unhelpful assistant message from conversation
+                conversation.remove(conversation.size() - 1);
+                // Add a strong reminder and retry the API call directly
+                String remind = "你刚才的回复没有包含 [CMD] 命令块！用户要求执行操作，"
+                        + "你必须严格按格式发出命令。现在请仅回复命令（不要其他文字）：";
                 conversation.add(new ChatRequest.Message("user", remind));
-                handler.postDelayed(() -> {
-                    // Show a "retrying" indicator and re-send
+                // Show retry indicator in UI
+                handler.post(() -> {
                     ChatMessage retryMsg = new ChatMessage("正在重试...", ChatMessage.TYPE_RECEIVED,
                             System.currentTimeMillis(), getSessionId());
                     chatAdapter.addMessage(retryMsg);
-                    sendFollowUp(remind); // reuse sendFollowUp to get AI response
-                }, 300);
+                });
+                retryCommand(remind);
             }
         });
     }
 
-    /** Check if the last user message looks like a create/delete/modify request. */
+    /** Check if the last USER message looks like a create/delete/modify request. */
     private boolean userLikelyWantedAction() {
         if (conversation.isEmpty()) return false;
-        ChatRequest.Message last = conversation.get(conversation.size() - 1);
-        if (!"user".equals(last.role)) return false;
-        String text = last.content;
+        // Search backward for the last user message (not the last message,
+        // which could be an assistant reply we just added).
+        String text = null;
+        for (int i = conversation.size() - 1; i >= 0; i--) {
+            ChatRequest.Message m = conversation.get(i);
+            if ("user".equals(m.role)) {
+                text = m.content;
+                break;
+            }
+        }
+        if (text == null) return false;
         // Keywords indicating the user wants a CRUD operation
         return text.contains("创建") || text.contains("新建") || text.contains("添加") || text.contains("新增")
             || text.contains("删除") || text.contains("移除") || text.contains("去掉")
@@ -368,46 +372,59 @@ public class ChatFragment extends Fragment {
             || text.contains("习惯") || text.contains("打卡") || text.contains("待办");
     }
 
-    /** Send a follow-up message and process any commands in the response. */
-    private void sendFollowUp(String contextMsg) {
+    /**
+     * Retry the AI API call after it failed to include a command in its response.
+     * Called only from sendToAI's retry path (single retry, no recursion).
+     */
+    private void retryCommand(String remind) {
         exec.execute(() -> {
-            String replyText = "操作已完成 ✅";
-            String execLog = "";
+            String replyText = null;
             try {
                 ChatApi api = ChatClient.getApi(appCtx);
                 if (api != null) {
                     List<ChatRequest.Message> msgs = new ArrayList<>();
                     msgs.add(new ChatRequest.Message("system", getSystemPrompt()));
                     msgs.addAll(conversation);
-
                     ChatRequest req = new ChatRequest(msgs);
                     String auth = ChatClient.getApiKey(appCtx);
                     Response<ChatResponse> resp = api.chat(auth, req).execute();
-
                     if (resp.isSuccessful() && resp.body() != null) {
-                        String text = resp.body().getContent();
-                        if (text != null && !text.isEmpty()) {
-                            CommandParser.Result r = new CommandParser(appCtx).process(text);
-                            replyText = r.displayText.isEmpty() ? text : r.displayText;
-                            execLog = r.execLog;
-                            // If command was executed, prepend result
-                            if (!execLog.isEmpty()) {
-                                replyText = execLog + "\n\n" + replyText;
-                            }
-                        }
+                        replyText = resp.body().getContent();
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, "sendFollowUp error: " + e.getMessage());
+                Log.e(TAG, "retryCommand error: " + e.getMessage());
             }
 
-            conversation.add(new ChatRequest.Message("assistant", replyText));
-            ChatMessage confirmMsg = new ChatMessage(replyText, ChatMessage.TYPE_RECEIVED,
+            if (replyText == null || replyText.isEmpty()) {
+                replyText = "操作失败，请重试。";
+            }
+
+            // Process commands in retry response
+            CommandParser.Result cmdResult = new CommandParser(appCtx).process(replyText);
+            String displayText = cmdResult.displayText;
+            String execLog = cmdResult.execLog;
+            boolean hadCommands = !execLog.isEmpty();
+
+            String userDisplayText = displayText;
+            if (hadCommands) {
+                userDisplayText = execLog + "\n\n" + displayText;
+            }
+
+            // Store in conversation with CMD tags intact
+            String contextText = replyText;
+            if (hadCommands) {
+                contextText += "\n[已执行: " + execLog + "]";
+            }
+            conversation.add(new ChatRequest.Message("assistant", contextText));
+
+            ChatMessage aiMsg = new ChatMessage(userDisplayText, ChatMessage.TYPE_RECEIVED,
                     System.currentTimeMillis(), getSessionId());
-            db.chatMessageDao().insert(confirmMsg);
+            db.chatMessageDao().insert(aiMsg);
 
             handler.post(() -> {
-                chatAdapter.addMessage(confirmMsg);
+                chatAdapter.removeLast(); // remove retry indicator
+                chatAdapter.addMessage(aiMsg);
                 scrollToBottom();
                 btnSend.setEnabled(true);
                 etInput.setEnabled(true);
