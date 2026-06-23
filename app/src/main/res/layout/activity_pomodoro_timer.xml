@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/timer_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:fitsSystemWindows="true"
+    android:background="@color/surface_light">
+
+    <!-- Top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:background="@color/yellow_primary"
+        android:elevation="2dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🍅 番茄钟"
+            android:textSize="18sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_timer_duration_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="25 分钟"
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary" />
+    </LinearLayout>
+
+    <!-- Main content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <!-- Task info -->
+        <TextView
+            android:id="@+id/tv_timer_task_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="专注时间"
+            android:textSize="22sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="bold" />
+
+        <!-- Timer card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="280dp"
+            android:layout_height="280dp"
+            app:cardCornerRadius="140dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/card_white"
+            android:layout_marginTop="32dp"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ProgressBar
+                    android:id="@+id/progress_circular"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="264dp"
+                    android:layout_height="264dp"
+                    android:layout_gravity="center"
+                    android:indeterminate="false"
+                    android:progressDrawable="@drawable/circular_progress" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/tv_timer_display"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="25:00"
+                        android:textSize="52sp"
+                        android:textColor="@color/text_primary"
+                        android:textStyle="bold"
+                        android:fontFamily="monospace" />
+
+                    <TextView
+                        android:id="@+id/tv_timer_phase"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/work"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Controls -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="40dp"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/btn_timer_stop"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:text="⏹"
+                android:textSize="28sp"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/timer_btn_circle"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/btn_timer_toggle"
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:text="▶"
+                android:textSize="34sp"
+                android:textColor="@color/text_primary"
+                android:gravity="center"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/timer_start_btn_bg"
+                android:layout_marginHorizontal="24dp" />
+
+            <View
+                android:layout_width="64dp"
+                android:layout_height="64dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_timer_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="点击 ▶ 开始专注"
+            android:textSize="13sp"
+            android:textColor="@color/text_hint"
+            android:layout_marginTop="20dp" />
+    </LinearLayout>
+</LinearLayout>

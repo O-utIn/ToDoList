@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/splash_gradient"
+    android:fitsSystemWindows="true">
+
+    <!-- App icon area -->
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:text="📋"
+        android:textSize="48sp"
+        android:gravity="center"
+        android:background="@drawable/icon_circle_bg"
+        android:layout_marginBottom="24dp" />
+
+    <!-- App name -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="28sp"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:letterSpacing="0.1"
+        android:layout_marginBottom="36dp" />
+
+    <!-- Quote / Proverb -->
+    <TextView
+        android:id="@+id/tv_quote"
+        android:layout_width="280dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="18sp"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.4"
+        android:alpha="0.9"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Author / source -->
+    <TextView
+        android:id="@+id/tv_quote_author"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="13sp"
+        android:textColor="#90FFFFFF"
+        android:gravity="center" />
+
+    <!-- Loading indicator -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginTop="48dp"
+        android:indeterminateTint="#FFFFFF" />
+
+</LinearLayout>

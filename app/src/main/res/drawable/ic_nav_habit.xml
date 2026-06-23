@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <!-- Star / habit tracking -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12,2 L15.09,8.26 L22,9.27 L17,14.14 L18.18,21.02 L12,17.77 L5.82,21.02 L7,14.14 L2,9.27 L8.91,8.26 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,4.5 L14.3,9.1 L19.3,9.8 L15.5,13.5 L16.4,18.5 L12,16.2 L7.6,18.5 L8.5,13.5 L4.7,9.8 L9.7,9.1 Z" />
+</vector>

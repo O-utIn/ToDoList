@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/settings_row_bg"
+    android:clickable="true"
+    android:focusable="true">
+
+    <TextView
+        android:id="@+id/tv_setting_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:text="🔄"
+        android:textSize="18sp"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/tv_setting_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="数据备份"
+        android:textSize="15sp"
+        android:textColor="@color/text_primary"
+        android:layout_marginStart="12dp" />
+
+    <TextView
+        android:id="@+id/tv_setting_arrow"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:text="›"
+        android:textSize="22sp"
+        android:textColor="@color/text_hint"
+        android:gravity="center"
+        android:visibility="visible" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_setting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+</LinearLayout>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ToDoList" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Primary brand color: warm yellow -->
+        <item name="colorPrimary">@color/yellow_primary</item>
+        <item name="colorPrimaryDark">@color/yellow_dark</item>
+        <item name="colorAccent">@color/yellow_accent</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+
+        <!-- Background & Surface -->
+        <item name="android:colorBackground">@color/surface_light</item>
+        <item name="colorSurface">@color/card_white</item>
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/yellow_dark</item>
+        <item name="android:navigationBarColor">@color/card_white</item>
+
+        <!-- Bottom navigation icon tint -->
+        <item name="bottomNavigationStyle">@style/BottomNavStyle</item>
+    </style>
+
+    <style name="BottomNavStyle" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="itemIconTint">@color/nav_icon_tint</item>
+        <item name="itemTextColor">@color/nav_icon_tint</item>
+        <item name="android:background">@color/card_white</item>
+        <item name="elevation">8dp</item>
+    </style>
+
+    <style name="Theme.Splash" parent="Theme.ToDoList">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

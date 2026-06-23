@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_habit"
+        android:icon="@drawable/ic_nav_habit"
+        android:title="@string/habit" />
+    <item
+        android:id="@+id/nav_todo"
+        android:icon="@drawable/ic_nav_todo"
+        android:title="@string/todo" />
+    <item
+        android:id="@+id/nav_pomodoro"
+        android:icon="@drawable/ic_nav_pomodoro"
+        android:title="@string/pomodoro" />
+    <item
+        android:id="@+id/nav_discover"
+        android:icon="@drawable/ic_nav_ai"
+        android:title="@string/discover" />
+    <item
+        android:id="@+id/nav_mine"
+        android:icon="@drawable/ic_nav_mine"
+        android:title="@string/mine" />
+</menu>

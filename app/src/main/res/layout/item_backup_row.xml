@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="10dp"
+    android:background="@drawable/settings_row_bg"
+    android:layout_marginBottom="6dp">
+
+    <!-- Checkmark indicator (visible only when selected) -->
+    <TextView
+        android:id="@+id/tv_checkmark"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:gravity="center"
+        android:text="✓"
+        android:textSize="16sp"
+        android:textColor="@color/yellow_dark"
+        android:visibility="invisible"
+        android:layout_marginEnd="8dp" />
+
+    <TextView
+        android:id="@+id/tv_backup_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="13sp"
+        android:textColor="@color/text_primary"
+        android:singleLine="true"
+        android:ellipsize="middle" />
+
+    <Button
+        android:id="@+id/btn_delete_backup"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:text="🗑️"
+        android:textSize="16sp"
+        android:backgroundTint="#00000000"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:padding="0dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+</LinearLayout>
