@@ -20,6 +20,7 @@ import com.example.todolist.MainActivity;
 import com.example.todolist.R;
 import com.example.todolist.adapter.CalendarMonthAdapter;
 import com.example.todolist.adapter.HabitAdapter;
+import com.example.todolist.ai.recommendation.RecommendationEngine;
 import com.example.todolist.data.AppDatabase;
 import com.example.todolist.data.dao.HabitCheckDao;
 import com.example.todolist.data.entity.HabitCheck;
@@ -30,8 +31,10 @@ import com.google.android.material.snackbar.Snackbar;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -121,9 +124,12 @@ public class HabitFragment extends Fragment {
                 } else {
                     if (existing != null) dao.delete(existing);
                 }
-                // Refresh badge counts after check change
+                // Refresh badge counts and recommendations after check change
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> refreshCalendarCounts());
+                    getActivity().runOnUiThread(() -> {
+                        refreshCalendarCounts();
+                        loadHabits();
+                    });
                 }
             });
         });
@@ -237,22 +243,45 @@ public class HabitFragment extends Fragment {
                 for (HabitCheck c : checks) checkedMap.put(c.habit_id, c.checked == 1);
             }
 
+            // --- Smart recommendation ---
+            RecommendationEngine engine = new RecommendationEngine(getContext());
+            List<HabitItem> recommended = engine.recommend(3);
+            Set<Long> recommendedIds = new HashSet<>();
+            for (HabitItem rh : recommended) {
+                if (rh.id != null) recommendedIds.add(rh.id);
+            }
+
+            // Reorder: recommended habits (active on this date) to the top
+            List<HabitItem> sorted = new ArrayList<>();
+            for (HabitItem rh : recommended) {
+                for (int i = 0; i < filtered.size(); i++) {
+                    if (filtered.get(i).id != null && filtered.get(i).id.equals(rh.id)) {
+                        sorted.add(filtered.remove(i));
+                        break;
+                    }
+                }
+            }
+            sorted.addAll(filtered);
+
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    habitAdapter.setData(filtered);
+                    habitAdapter.setData(sorted);
                     habitAdapter.setCheckedMap(checkedMap);
+                    habitAdapter.setRecommendedIds(recommendedIds);
                 });
             }
         });
     }
 
     /**
-     * Count habit check-ins for each date in the given list (week or month).
+     * Count habits that are active on each date but NOT yet checked (pending).
      */
     private void loadCountsForDates(List<LocalDate> dates) {
         exec.execute(() -> {
             if (getContext() == null) return;
             final String userId = UserSession.getCurrentUser(getContext());
+            List<HabitItem> allHabits = AppDatabase.getInstance(getContext())
+                .habitDao().getByUser(userId);
             Map<LocalDate, Integer> counts = new HashMap<>();
 
             for (LocalDate date : dates) {
@@ -260,13 +289,21 @@ public class HabitFragment extends Fragment {
                 long stamp = DateUtils.toDateStamp(date);
                 List<HabitCheck> checks = AppDatabase.getInstance(getContext())
                     .habitCheckDao().getByDate(stamp, userId);
-                int checkedCount = 0;
+                // Build set of checked habit IDs for this date
+                java.util.Set<Long> checkedIds = new java.util.HashSet<>();
                 if (checks != null) {
                     for (HabitCheck c : checks) {
-                        if (c.checked == 1) checkedCount++;
+                        if (c.checked == 1) checkedIds.add(c.habit_id);
                     }
                 }
-                if (checkedCount > 0) counts.put(date, checkedCount);
+                // Count active habits that are NOT checked
+                int pendingCount = 0;
+                for (HabitItem h : allHabits) {
+                    if (h.isActiveOnDate(date) && (h.id == null || !checkedIds.contains(h.id))) {
+                        pendingCount++;
+                    }
+                }
+                if (pendingCount > 0) counts.put(date, pendingCount);
             }
 
             if (getActivity() != null) {

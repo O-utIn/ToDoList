@@ -27,6 +27,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ToDoList">
 
+        <!-- ContentProvider for cross-app todo data sharing -->
+        <provider
+            android:name=".provider.TodoProvider"
+            android:authorities="com.example.todolist.provider"
+            android:exported="true" />
+
         <!-- Splash / Cover Screen -->
         <activity
             android:name=".SplashActivity"
@@ -85,6 +91,19 @@
         <receiver
             android:name=".receiver.NotificationActionReceiver"
             android:exported="false" />
+
+        <!-- Home screen widget showing pending todo count and top items -->
+        <receiver
+            android:name=".widget.TodoWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.todolist.APPWIDGET_MANUAL_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/todo_widget_info" />
+        </receiver>
     </application>
 
 </manifest>

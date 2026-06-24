@@ -32,4 +32,8 @@ public interface TodoDao {
     /** Get todo by id scoped to user. */
     @Query("SELECT * FROM todo_item WHERE id = :id AND (user_id = :userId OR user_id = '') LIMIT 1")
     TodoItem getByIdForUser(long id, String userId);
+
+    /** Get pending (incomplete) todos for a specific user, plus legacy items. */
+    @Query("SELECT * FROM todo_item WHERE is_completed = 0 AND (user_id = :userId OR user_id = '') ORDER BY priority DESC, due_date ASC")
+    List<TodoItem> getPendingByUser(String userId);
 }

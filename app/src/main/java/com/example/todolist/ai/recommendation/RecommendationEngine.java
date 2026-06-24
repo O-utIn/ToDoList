@@ -34,7 +34,7 @@ public class RecommendationEngine {
         TIME_SLOTS.put("阅读", 1);   TIME_SLOTS.put("学习", 1);   TIME_SLOTS.put("工作", 1);
         TIME_SLOTS.put("喝水", 1);   TIME_SLOTS.put("午休", 1);   TIME_SLOTS.put("健身", 1);
         TIME_SLOTS.put("晚餐", 2);   TIME_SLOTS.put("日记", 2);   TIME_SLOTS.put("复盘", 2);
-        TIME_SLOTS.put("早睡", 2);   TIME_SLOTS.put("阅读", 2);   TIME_SLOTS.put("放松", 2);
+        TIME_SLOTS.put("早睡", 2);   TIME_SLOTS.put("放松", 2);
     }
     // 0 = morning (5-11), 1 = afternoon (11-18), 2 = evening (18-24)
 

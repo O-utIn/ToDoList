@@ -44,6 +44,19 @@
             android:paddingVertical="2dp"
             android:layout_marginEnd="8dp" />
 
+        <TextView
+            android:id="@+id/text_recommend_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/recommend_badge"
+            android:textSize="10sp"
+            android:textColor="@color/yellow_dark"
+            android:background="@drawable/recommend_badge_bg"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="1dp"
+            android:layout_marginEnd="6dp"
+            android:visibility="gone" />
+
         <CheckBox
             android:id="@+id/checkbox_check"
             android:layout_width="wrap_content"

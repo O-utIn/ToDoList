@@ -110,6 +110,11 @@ public class TodoFragment extends Fragment {
             exec.execute(() -> {
                 item.is_completed = checked ? 1 : 0;
                 AppDatabase.getInstance(ctx).todoDao().update(item);
+                com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
+                // Refresh calendar counts after check change
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> refreshCalendarCounts());
+                }
             });
         });
 
@@ -245,7 +250,7 @@ public class TodoFragment extends Fragment {
                 long stamp = DateUtils.toDateStamp(date);
                 int count = 0;
                 for (TodoItem t : all) {
-                    if (t.due_date > 0 && isSameDay(t.due_date, stamp)) count++;
+                    if (t.due_date > 0 && t.is_completed == 0 && isSameDay(t.due_date, stamp)) count++;
                 }
                 if (count > 0) counts.put(date, count);
             }
@@ -273,12 +278,16 @@ public class TodoFragment extends Fragment {
         todoAdapter.removeAt(pos);
         final Context ctx = getContext();
         if (ctx == null) return;
-        exec.execute(() -> AppDatabase.getInstance(ctx).todoDao().delete(item));
+        exec.execute(() -> {
+            AppDatabase.getInstance(ctx).todoDao().delete(item);
+            com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
+        });
         Snackbar.make(rootView, getString(R.string.deleted), Snackbar.LENGTH_LONG)
             .setAction(getString(R.string.undo), view -> {
                 exec.execute(() -> {
                     long newId = AppDatabase.getInstance(ctx).todoDao().insert(item);
                     item.id = newId;
+                    com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> todoAdapter.insertAt(pos, item));
                     }

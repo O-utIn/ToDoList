@@ -111,11 +111,13 @@ public class EditTodoActivity extends AppCompatActivity {
                 TodoItem item = new TodoItem(title, note, finalDue, 0, priority);
                 item.user_id = UserSession.getCurrentUser(getApplicationContext());
                 AppDatabase.getInstance(getApplicationContext()).todoDao().insert(item);
+                com.example.todolist.widget.TodoWidgetProvider.requestUpdate(getApplicationContext());
             } else {
                 TodoItem item = new TodoItem(title, note, finalDue, 0, priority);
                 item.id = todoId;
                 item.user_id = UserSession.getCurrentUser(getApplicationContext());
                 AppDatabase.getInstance(getApplicationContext()).todoDao().update(item);
+                com.example.todolist.widget.TodoWidgetProvider.requestUpdate(getApplicationContext());
             }
             runOnUiThread(() -> {
                 setResult(RESULT_OK);

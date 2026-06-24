@@ -13,8 +13,10 @@ import com.example.todolist.R;
 import com.example.todolist.data.entity.HabitItem;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
 
@@ -22,6 +24,7 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
     private OnCheckListener checkListener;
     private OnItemClickListener itemClickListener;
     private Map<Long, Boolean> checkedMap = new HashMap<>();
+    private Set<Long> recommendedIds = new HashSet<>();
 
     public interface OnCheckListener { void onCheck(HabitItem item, boolean checked); }
     public void setOnCheckListener(OnCheckListener l) { this.checkListener = l; }
@@ -35,6 +38,10 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
     }
     public void setCheckedMap(Map<Long, Boolean> map) {
         this.checkedMap = map != null ? map : new HashMap<>();
+        notifyDataSetChanged();
+    }
+    public void setRecommendedIds(Set<Long> ids) {
+        this.recommendedIds = ids != null ? ids : new HashSet<>();
         notifyDataSetChanged();
     }
 
@@ -75,6 +82,10 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
         // Schedule summary (replaces old frequency badge)
         holder.schedule.setText(item.getScheduleSummary());
 
+        // Recommendation badge
+        boolean isRecommended = item.id != null && recommendedIds.contains(item.id);
+        holder.recommendBadge.setVisibility(isRecommended ? View.VISIBLE : View.GONE);
+
         // Color dot
         try {
             int color = Color.parseColor(item.color != null ? item.color : "#FFD54F");
@@ -104,7 +115,7 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
     @Override public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView name, description, schedule;
+        TextView name, description, schedule, recommendBadge;
         View colorDot;
         CheckBox checkBox;
         VH(@NonNull View itemView) {
@@ -112,6 +123,7 @@ public class HabitAdapter extends RecyclerView.Adapter<HabitAdapter.VH> {
             name = itemView.findViewById(R.id.text_name);
             description = itemView.findViewById(R.id.text_description);
             schedule = itemView.findViewById(R.id.text_schedule);
+            recommendBadge = itemView.findViewById(R.id.text_recommend_badge);
             colorDot = itemView.findViewById(R.id.view_color_dot);
             checkBox = itemView.findViewById(R.id.checkbox_check);
         }
