@@ -67,12 +67,18 @@ public class ChatFragment extends Fragment {
             "  list_habits → 无参数\n" +
             "  create_pomo → name, minutes(如25)\n" +
             "  delete_pomo → name 或 id\n" +
+            "  update_todo → 必须指定 title(要修改的待办标题关键词,用于匹配) 或 id, 可选: new_title(新标题), note, priority(1-3), due(yyyy-MM-dd)\n" +
+            "  update_habit → 必须指定 name(要修改的习惯名称关键词,用于匹配) 或 id, 可选: new_name(新名称), desc, icon, color, freq(每日/每周), time(HH:mm), days(如\"135\")\n" +
+            "  update_pomo → 必须指定 name(要修改的番茄钟名称关键词,用于匹配) 或 id, 可选: new_name(新名称), icon, minutes\n" +
             "  list_pomos → 无参数\n\n" +
             "### 示例：\n" +
             "用户:「创建待办买菜」→ 你:「好的，已创建。[CMD]{\"action\":\"create_todo\",\"title\":\"买菜\",\"priority\":1}[/CMD]」\n" +
             "用户:「删除买菜」→ 你:「好的。[CMD]{\"action\":\"delete_todo\",\"title\":\"买菜\"}[/CMD]」\n" +
             "用户:「每天7点晨跑」→ 你:「好的。[CMD]{\"action\":\"create_habit\",\"name\":\"晨跑\",\"freq\":\"每日\",\"time\":\"07:00\"}[/CMD]」\n" +
-            "用户:「每周一三五早上8点阅读」→ 你:「好的。[CMD]{\"action\":\"create_habit\",\"name\":\"阅读\",\"freq\":\"每周\",\"days\":\"135\",\"time\":\"08:00\"}[/CMD]」\n\n" +
+            "用户:「每周一三五早上8点阅读」→ 你:「好的。[CMD]{\"action\":\"create_habit\",\"name\":\"阅读\",\"freq\":\"每周\",\"days\":\"135\",\"time\":\"08:00\"}[/CMD]」\n" +
+            "用户:「把买菜改成买菜和水果」→ 你:「好的。[CMD]{\"action\":\"update_todo\",\"title\":\"买菜\",\"new_title\":\"买菜和水果\"}[/CMD]」\n" +
+            "用户:「修改阅读习惯为每天9点」→ 你:「好的。[CMD]{\"action\":\"update_habit\",\"name\":\"阅读\",\"freq\":\"每日\",\"time\":\"09:00\"}[/CMD]」\n" +
+            "用户:「把学习任务改成45分钟」→ 你:「好的。[CMD]{\"action\":\"update_pomo\",\"name\":\"学习\",\"minutes\":45}[/CMD]」\n\n" +
             "⏰ 今天=" + todayStr + " " + weekday +
             "  明天=" + (tomorrow.getMonthValue() + "月" + tomorrow.getDayOfMonth() + "日") +
             "  后天=" + (today.plusDays(2).getMonthValue() + "月" + today.plusDays(2).getDayOfMonth() + "日") + "\n" +
@@ -367,6 +373,8 @@ public class ChatFragment extends Fragment {
         return text.contains("创建") || text.contains("新建") || text.contains("添加") || text.contains("新增")
             || text.contains("删除") || text.contains("移除") || text.contains("去掉")
             || text.contains("完成") || text.contains("做完") || text.contains("标记")
+            || text.contains("修改") || text.contains("更新") || text.contains("改成") || text.contains("改为")
+            || text.contains("改一下") || text.contains("调整") || text.contains("变更") || text.contains("编辑")
             || text.contains("帮我") || text.contains("添加一个") || text.contains("加一个")
             || text.contains("番茄") || text.contains("专注") || text.contains("计时")
             || text.contains("习惯") || text.contains("打卡") || text.contains("待办");

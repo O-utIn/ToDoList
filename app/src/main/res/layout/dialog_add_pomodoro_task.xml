@@ -57,7 +57,8 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:background="@drawable/chip_default_bg"
+            android:background="@drawable/chip_selector_bg"
+            android:textColor="@color/text_primary"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginEnd="8dp" />
@@ -71,7 +72,8 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:background="@drawable/chip_default_bg"
+            android:background="@drawable/chip_selector_bg"
+            android:textColor="@color/text_primary"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginHorizontal="4dp" />
@@ -85,7 +87,8 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:background="@drawable/chip_default_bg"
+            android:background="@drawable/chip_selector_bg"
+            android:textColor="@color/text_primary"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginHorizontal="4dp" />
@@ -99,7 +102,8 @@
             android:textSize="15sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:background="@drawable/chip_default_bg"
+            android:background="@drawable/chip_selector_bg"
+            android:textColor="@color/text_primary"
             android:clickable="true"
             android:focusable="true"
             android:layout_marginStart="8dp" />

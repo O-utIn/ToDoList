@@ -80,7 +80,6 @@
             android:name=".PomodoroSettingsActivity"
             android:exported="false"
             android:label="番茄钟设置" />
-
         <!-- Pomodoro Foreground Service -->
         <service
             android:name=".service.PomodoroService"
@@ -92,18 +91,6 @@
             android:name=".receiver.NotificationActionReceiver"
             android:exported="false" />
 
-        <!-- Home screen widget showing pending todo count and top items -->
-        <receiver
-            android:name=".widget.TodoWidgetProvider"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.todolist.APPWIDGET_MANUAL_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/todo_widget_info" />
-        </receiver>
     </application>
 
 </manifest>

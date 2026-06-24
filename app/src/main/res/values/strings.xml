@@ -80,7 +80,5 @@
     <string name="ai_missing_title">AI 未能解析到任务标题。是否手动编辑？</string>
     <string name="recommend_badge">💡推荐</string>
     <string name="daily_reminder_personalized">现在是%1$s的好时间！你今天还没打卡哦</string>
-    <string name="widget_description">显示待办数量和待完成事项</string>
-    <string name="widget_empty">没有待办</string>
-    <string name="widget_tap_hint">点击打开</string>
+    <string name="badge_pending_format">未完成: %d 项</string>
 </resources>

@@ -18,6 +18,7 @@ public class NotificationHelper {
     public static final String CHANNEL_POMODORO = "pomodoro_channel";
     public static final String CHANNEL_REMINDER = "reminder_channel";
     public static final String CHANNEL_GENERAL = "general_channel";
+    public static final String CHANNEL_BADGE = "badge_channel";
 
     /**
      * Create all app notification channels. Safe to call multiple times.
@@ -52,6 +53,15 @@ public class NotificationHelper {
             NotificationManager.IMPORTANCE_DEFAULT
         );
         nm.createNotificationChannel(generalChannel);
+
+        // Badge channel — silent, no vibration, for launcher icon badge
+        NotificationChannel badgeChannel = new NotificationChannel(
+            CHANNEL_BADGE,
+            "角标通知",
+            NotificationManager.IMPORTANCE_MIN
+        );
+        badgeChannel.setDescription("应用图标角标数字");
+        nm.createNotificationChannel(badgeChannel);
     }
 
     /**

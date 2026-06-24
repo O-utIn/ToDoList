@@ -86,7 +86,7 @@ public class LocationHelper {
 
     /**
      * Request a single fresh location update, then automatically stop.
-     * Fires a "locating..." status first, then the result, then "completed" status.
+     * Fires a "locating..." status, then the result, then "completed" status.
      * Falls back to last-known location after a 15-second timeout.
      */
     @SuppressLint("MissingPermission")
@@ -150,7 +150,6 @@ public class LocationHelper {
                         stopTracking();
 
                         LocationInfo basic = LocationInfo.fromLocation(loc);
-                        // Post basic info immediately
                         locationLiveData.postValue(basic);
 
                         // Run geocoding on background thread
@@ -159,7 +158,7 @@ public class LocationHelper {
                             locationLiveData.postValue(basic.withAddress(addr));
                         });
 
-                        locationLiveData.postValue(LocationInfo.status("定位完成 ✓"));
+                        locationLiveData.postValue(LocationInfo.status("定位完成"));
                     } catch (Exception e) {
                         Log.e(TAG, "onLocationResult error", e);
                         timeoutHandler.removeCallbacks(timeoutRunnable);
@@ -184,8 +183,6 @@ public class LocationHelper {
     }
 
     public void stopTracking() {
-        // Always try to remove the callback if it exists — do NOT gate on isTracking,
-        // because the flag could get out of sync with the actual registered callback.
         if (locationCallback != null) {
             try {
                 fusedClient.removeLocationUpdates(locationCallback);
@@ -243,6 +240,10 @@ public class LocationHelper {
         }
     }
 
+    // ──────────────────────────────────────────────
+    //  Geocoding
+    // ──────────────────────────────────────────────
+
     private static String reverseGeocode(Context appCtx, double lat, double lng) {
         try {
             if (!Geocoder.isPresent()) {
@@ -286,7 +287,9 @@ public class LocationHelper {
         }
     }
 
-    // ---- Data class ----
+    // ──────────────────────────────────────────────
+    //  LocationInfo data class
+    // ──────────────────────────────────────────────
 
     public static class LocationInfo {
         public final double latitude;

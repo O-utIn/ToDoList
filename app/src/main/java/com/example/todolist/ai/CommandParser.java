@@ -82,6 +82,9 @@ public class CommandParser {
                 case "delete_pomo":   return execDeletePomodoro(obj);
                 case "list_todos":    return execListTodos();
                 case "list_habits":   return execListHabits();
+                case "update_todo":   return execUpdateTodo(obj);
+                case "update_habit":  return execUpdateHabit(obj);
+                case "update_pomo":   return execUpdatePomodoro(obj);
                 case "list_pomos":    return execListPomodoros();
                 default:
                     Log.w(TAG, "Unknown action: " + action);
@@ -158,6 +161,47 @@ public class CommandParser {
             return "❌ 未找到匹配的未完成待办";
         }
         return "❌ 请指定要完成的待办 ID 或标题";
+    }
+
+    private String execUpdateTodo(JsonObject o) {
+        // 1) Find the target todo
+        TodoItem t = findTodo(o);
+        if (t == null) return "❌ 未找到匹配的待办事项";
+
+        int changes = 0;
+        StringBuilder detail = new StringBuilder();
+
+        // Use new_title for renaming (title is the finder key)
+        if (o.has("new_title") && !o.get("new_title").isJsonNull()) {
+            String newTitle = o.get("new_title").getAsString();
+            if (!newTitle.isEmpty() && !newTitle.equals(t.title)) {
+                t.title = newTitle;
+                changes++;
+                detail.append("标题→「").append(newTitle).append("」 ");
+            }
+        }
+        if (o.has("note") && !o.get("note").isJsonNull()) {
+            t.note = o.get("note").getAsString();
+            changes++;
+            detail.append("备注已更新 ");
+        }
+        if (o.has("priority")) {
+            int p = o.get("priority").getAsInt();
+            if (p >= 1 && p <= 3 && p != t.priority) {
+                t.priority = p;
+                changes++;
+                detail.append("优先级→").append(p).append(" ");
+            }
+        }
+        if (o.has("due") && !o.get("due").isJsonNull()) {
+            t.due_date = parseDateTime(o.get("due").getAsString());
+            changes++;
+            detail.append("截止→").append(fmtDate(t.due_date)).append(" ");
+        }
+
+        if (changes == 0) return "ℹ️ 没有需要更新的字段";
+        db.todoDao().update(t);
+        return "✅ 已更新待办 #" + t.id + "：「" + t.title + "」" + detail;
     }
 
     // --- Habit ---
@@ -304,6 +348,71 @@ public class CommandParser {
         return "❌ 请指定要删除的习惯 ID 或名称";
     }
 
+    private String execUpdateHabit(JsonObject o) {
+        HabitItem h = findHabit(o);
+        if (h == null) return "❌ 未找到匹配的习惯";
+
+        int changes = 0;
+        StringBuilder detail = new StringBuilder();
+
+        // Use new_name for renaming (name is the finder key)
+        if (o.has("new_name") && !o.get("new_name").isJsonNull()) {
+            String n = o.get("new_name").getAsString();
+            if (!n.isEmpty() && !n.equals(h.name)) {
+                h.name = n;
+                changes++;
+                detail.append("名称→「").append(n).append("」 ");
+            }
+        }
+        if (o.has("desc") && !o.get("desc").isJsonNull()) {
+            h.description = o.get("desc").getAsString();
+            changes++;
+            detail.append("描述已更新 ");
+        }
+        if (o.has("icon") && !o.get("icon").isJsonNull()) {
+            h.icon_res = o.get("icon").getAsString();
+            changes++;
+            detail.append("图标已更新 ");
+        }
+        if (o.has("color") && !o.get("color").isJsonNull()) {
+            h.color = o.get("color").getAsString();
+            changes++;
+            detail.append("颜色已更新 ");
+        }
+        if (o.has("freq") && !o.get("freq").isJsonNull()) {
+            h.frequency = o.get("freq").getAsString();
+            changes++;
+            detail.append("频率→").append(h.frequency).append(" ");
+        }
+
+        // Rebuild schedule_config if time or days changed
+        boolean configChanged = false;
+        String cfgStr = h.schedule_config != null ? h.schedule_config : "{\"mode\":\"daily\"}";
+        try {
+            com.google.gson.JsonObject cfg = com.google.gson.JsonParser.parseString(cfgStr).getAsJsonObject();
+            if (o.has("time") && !o.get("time").isJsonNull()) {
+                int minsVal = parseTimeToMinutes(o.get("time").getAsString());
+                cfg.addProperty("time", minsVal);
+                configChanged = true;
+                detail.append("提醒时间已更新 ");
+            }
+            if (o.has("days") && !o.get("days").isJsonNull()) {
+                String daysVal = parseDays(o.get("days").getAsString(), "");
+                cfg.addProperty("days", daysVal);
+                configChanged = true;
+                detail.append("打卡日已更新 ");
+            }
+            if (configChanged) {
+                h.schedule_config = cfg.toString();
+                changes++;
+            }
+        } catch (Exception ignored) {}
+
+        if (changes == 0) return "ℹ️ 没有需要更新的字段";
+        db.habitDao().update(h);
+        return "✅ 已更新习惯 #" + h.id + "：「" + h.name + "」" + detail;
+    }
+
     // --- Pomodoro ---
 
     private String execCreatePomodoro(JsonObject o) {
@@ -344,6 +453,41 @@ public class CommandParser {
         return "❌ 请指定要删除的番茄钟任务 ID 或名称";
     }
 
+    private String execUpdatePomodoro(JsonObject o) {
+        PomodoroTask p = findPomodoro(o);
+        if (p == null) return "❌ 未找到匹配的番茄钟任务";
+
+        int changes = 0;
+        StringBuilder detail = new StringBuilder();
+
+        // Use new_name for renaming (name is the finder key)
+        if (o.has("new_name") && !o.get("new_name").isJsonNull()) {
+            String n = o.get("new_name").getAsString();
+            if (!n.isEmpty() && !n.equals(p.name)) {
+                p.name = n;
+                changes++;
+                detail.append("名称→「").append(n).append("」 ");
+            }
+        }
+        if (o.has("icon") && !o.get("icon").isJsonNull()) {
+            p.icon = o.get("icon").getAsString();
+            changes++;
+            detail.append("图标已更新 ");
+        }
+        if (o.has("minutes")) {
+            int m = o.get("minutes").getAsInt();
+            if (m > 0 && m != p.duration_minutes) {
+                p.duration_minutes = m;
+                changes++;
+                detail.append("时长→").append(m).append("分钟 ");
+            }
+        }
+
+        if (changes == 0) return "ℹ️ 没有需要更新的字段";
+        db.pomodoroTaskDao().update(p);
+        return "✅ 已更新番茄钟任务 #" + p.id + "：「" + p.name + "」" + detail;
+    }
+
     // --- List queries ---
 
     private String execListTodos() {
@@ -382,6 +526,48 @@ public class CommandParser {
     }
 
     // --- Helpers ---
+
+    /** Find a TodoItem by id or title keyword. */
+    private TodoItem findTodo(JsonObject o) {
+        if (o.has("id")) {
+            return db.todoDao().getById(o.get("id").getAsLong());
+        }
+        if (o.has("title")) {
+            String kw = o.get("title").getAsString().toLowerCase();
+            for (TodoItem t : db.todoDao().getByUser(userId)) {
+                if (t.title.toLowerCase().contains(kw)) return t;
+            }
+        }
+        return null;
+    }
+
+    /** Find a HabitItem by id or name keyword. */
+    private HabitItem findHabit(JsonObject o) {
+        if (o.has("id")) {
+            return db.habitDao().getById(o.get("id").getAsLong());
+        }
+        if (o.has("name")) {
+            String kw = o.get("name").getAsString().toLowerCase();
+            for (HabitItem h : db.habitDao().getByUser(userId)) {
+                if (h.name.toLowerCase().contains(kw)) return h;
+            }
+        }
+        return null;
+    }
+
+    /** Find a PomodoroTask by id or name keyword. */
+    private PomodoroTask findPomodoro(JsonObject o) {
+        if (o.has("id")) {
+            return db.pomodoroTaskDao().getById(o.get("id").getAsLong());
+        }
+        if (o.has("name")) {
+            String kw = o.get("name").getAsString().toLowerCase();
+            for (PomodoroTask p : db.pomodoroTaskDao().getByUser(userId)) {
+                if (p.name.toLowerCase().contains(kw)) return p;
+            }
+        }
+        return null;
+    }
 
     private long parseDateTime(String s) {
         try {

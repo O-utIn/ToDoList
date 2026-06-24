@@ -47,10 +47,11 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "createChannels failed", e);
         }
 
-        // Auto-fetch location once on launch (if permitted)
+        // Auto-fetch fresh location on launch (if permitted)
+        // Uses LiveData — MineFragment will pick up the result when opened
         try {
             if (LocationHelper.hasPermission(this)) {
-                LocationHelper.getInstance(this).getLastLocation(this);
+                LocationHelper.getInstance(this).requestSingleLocation(this);
             }
         } catch (Exception e) {
             Log.e(TAG, "auto location fetch failed", e);

@@ -110,7 +110,7 @@ public class TodoFragment extends Fragment {
             exec.execute(() -> {
                 item.is_completed = checked ? 1 : 0;
                 AppDatabase.getInstance(ctx).todoDao().update(item);
-                com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
+                com.example.todolist.widget.BadgeHelper.refresh(ctx);
                 // Refresh calendar counts after check change
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> refreshCalendarCounts());
@@ -280,14 +280,14 @@ public class TodoFragment extends Fragment {
         if (ctx == null) return;
         exec.execute(() -> {
             AppDatabase.getInstance(ctx).todoDao().delete(item);
-            com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
+            com.example.todolist.widget.BadgeHelper.refresh(ctx);
         });
         Snackbar.make(rootView, getString(R.string.deleted), Snackbar.LENGTH_LONG)
             .setAction(getString(R.string.undo), view -> {
                 exec.execute(() -> {
                     long newId = AppDatabase.getInstance(ctx).todoDao().insert(item);
                     item.id = newId;
-                    com.example.todolist.widget.TodoWidgetProvider.requestUpdate(ctx);
+                    com.example.todolist.widget.BadgeHelper.refresh(ctx);
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> todoAdapter.insertAt(pos, item));
                     }
