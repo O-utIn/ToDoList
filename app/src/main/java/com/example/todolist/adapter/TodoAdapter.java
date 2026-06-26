@@ -2,6 +2,9 @@ package com.example.todolist.adapter;
 
 import android.graphics.Paint;
 import android.os.Build;
+import android.text.style.StrikethroughSpan;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -121,12 +124,17 @@ public class TodoAdapter extends RecyclerView.Adapter<TodoAdapter.VH> {
     }
 
     private void updateStrikethrough(VH holder, boolean completed) {
+        String text = holder.title.getText().toString();
         if (completed) {
-            holder.title.setPaintFlags(holder.title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-            holder.title.setTextColor(0xFF9E9E9E);
+            // Use SpannableString for reliable cross-version strikethrough
+            SpannableString sp = new SpannableString(text);
+            sp.setSpan(new StrikethroughSpan(), 0, text.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            holder.title.setText(sp);
+            holder.title.setTextColor(0xFF9E9E9E);          // gray
         } else {
-            holder.title.setPaintFlags(holder.title.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            holder.title.setTextColor(0xFF212121);
+            holder.title.setText(text);                      // plain text (removes spans)
+            holder.title.setTextColor(0xFF212121);           // dark
         }
     }
 
