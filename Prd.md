@@ -31,11 +31,11 @@
 +-------------------------------------------------------------------+
 |                           表示层 (UI Layer)                        |
 |   Activity (Splash, Login, Lock, Main, EditTodo, EditHabit,       |
-|             PomodoroTimer, PomodoroSettings)                       |
-|   Fragment (Habit, Todo, Pomodoro, Discover/Chat, Mine)            |
-|   RecyclerView, ViewPager2, BottomNavigationView, Custom Views     |
+|             PomodoroTimer, PomodoroSettings)                      |
+|   Fragment (Habit, Todo, Pomodoro, Discover/Chat, Mine)           |
+|   RecyclerView, ViewPager2, BottomNavigationView, Custom Views    |
 +-------------------------------------------------------------------+
-|                          业务逻辑层 (Logic Layer)                  |
+|                          业务逻辑层 (Logic Layer)                   |
 |   BroadcastReceiver (强制下线, 每日提醒, 通知操作)                    |
 |   Foreground Service (番茄钟倒计时)   |   AI Command Parser         |
 |   RecommendationEngine (本地规则推荐) |   通知管理 (Notification)    |
@@ -43,7 +43,7 @@
 |                          数据源与支撑层 (Data Layer)                |
 |   Room/SQLite (7 张实体表)     |   SharedPreferences (配置与会话)    |
 |   File Storage (备份/日志)     |   ContentProvider (跨进程共享)      |
-|   Location API (FusedLocation) |   Retrofit + OkHttp (AI API)      |
+|   Location API (FusedLocation) |   Retrofit + OkHttp (AI API)     |
 |   Android Keystore (AES/GCM)   |   AlarmManager (定时提醒)         |
 +-------------------------------------------------------------------+
 ```

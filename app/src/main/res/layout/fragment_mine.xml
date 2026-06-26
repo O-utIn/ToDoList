@@ -50,7 +50,10 @@
             android:elevation="4dp">
 
             <include layout="@layout/item_stat"
-                android:id="@+id/stat_habits" />
+                android:id="@+id/stat_habits"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
 
             <View
                 android:layout_width="1dp"
@@ -59,7 +62,10 @@
                 android:background="@color/card_stroke" />
 
             <include layout="@layout/item_stat"
-                android:id="@+id/stat_todos" />
+                android:id="@+id/stat_todos"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
 
             <View
                 android:layout_width="1dp"
@@ -68,7 +74,10 @@
                 android:background="@color/card_stroke" />
 
             <include layout="@layout/item_stat"
-                android:id="@+id/stat_pomodoros" />
+                android:id="@+id/stat_pomodoros"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
 
         </LinearLayout>
 
