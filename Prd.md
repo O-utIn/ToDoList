@@ -37,11 +37,11 @@
 +-------------------------------------------------------------------+
 |                          业务逻辑层 (Logic Layer)                   |
 |   BroadcastReceiver (强制下线, 每日提醒, 通知操作)                    |
-|   Foreground Service (番茄钟倒计时)   |   AI Command Parser         |
+|   Foreground Service (番茄钟倒计时)   |   ChatClient (Retrofit 单例)   |   AI Command Parser         |
 |   RecommendationEngine (本地规则推荐) |   通知管理 (Notification)    |
 +-------------------------------------------------------------------+
 |                          数据源与支撑层 (Data Layer)                |
-|   Room/SQLite (7 张实体表)     |   SharedPreferences (配置与会话)    |
+|   Room/SQLite (6 张实体表)     |   SharedPreferences (配置与会话)    |
 |   File Storage (备份/日志)     |   ContentProvider (跨进程共享)      |
 |   Location API (FusedLocation) |   Retrofit + OkHttp (AI API)     |
 |   Android Keystore (AES/GCM)   |   AlarmManager (定时提醒)         |
@@ -174,9 +174,11 @@
 
 ### 5.2 跨程序数据共享 (Content Provider)
 *   **业务场景**：模拟外部应用或桌面小部件需要获取待办数据。
-*   **技术实现**：自定义 `TodoProvider`（authority: `com.example.todolist.provider`），在 `AndroidManifest.xml` 中注册。提供两个 URI：
-    *   `/todos`：返回 `MatrixCursor`（id, title, is_completed 列）
-    *   `/todos/count`：返回待办总数。
+*   **技术实现**：自定义 `TodoProvider`（authority: `com.example.todolist.provider`），在 `AndroidManifest.xml` 中注册。提供四个 URI：
+    *   `/todos`：返回当前用户所有待办（7 列：id, title, note, due_date, is_completed, priority, user_id）
+    *   `/todos/count`：返回待办总数
+    *   `/todos/pending`：返回未完成待办列表
+    *   `/todos/pending/count`：返回未完成待办数量
 
 ### 5.3 AI 对话与自然语言操作
 *   **业务场景**：用户通过自然语言快速管理待办、习惯和番茄钟任务，无需手动操作 UI。
@@ -184,11 +186,13 @@
 
 ### 5.4 本地智能推荐引擎 (Local Recommendation Engine)
 *   **业务场景**：根据用户当前时间段和历史打卡行为，个性化推荐适合当前进行的习惯。
-*   **技术实现**：基于规则的轻量级评分系统：
-    *   **时间槽匹配**（权重 2.0）：通过关键词字典将习惯名映射到早/午/晚时段
-    *   **历史完成率**（权重 3.0）：最近 7 天打卡完成比例
-    *   **今日未打卡奖励**（权重 1.0）：当天尚未打卡加 1.0 分
-    *   综合得分排序，返回 Top-N 推荐。
+*   **技术实现**：基于规则的轻量级评分系统（共 5 条规则）：
+    *   **今日已完成排除**：今日已打卡的习惯直接排除，不参与评分。
+    *   **时间槽匹配**（权重 2.0）：通过关键词字典将习惯名映射到早（5-11 时）/ 午（11-18 时）/ 晚（18-24 时）三个时段，匹配当前时段 +2.0，不匹配 -1.0，无关联关键词则中性（0）。
+    *   **7 天完成率**（权重 3.0）：最近 7 天打卡完成比例。≥70% 得 +3.0，30%~70% 按比例折算（rate × 3.0），<30% 得 -1.0，无历史记录则中性（0）。
+    *   **连续打卡加成**：从昨天往前倒推的连续打卡天数 ≥ 5 得 +2.0，≥ 3 得 +1.0。
+    *   **荒废惩罚**：最近一次打卡距今 ≥ 7 天得 -2.0，≥ 3 天得 -1.0。无历史记录视为新习惯，不受惩罚。
+    *   综合得分 ≥ 1.0 的习惯进入推荐，硬上限最多 2 项。
 
 ### 5.5 启动页与励志语录 (Splash Screen)
 *   **业务场景**：应用冷启动展示过渡动画与一条随机励志语录。
@@ -202,11 +206,17 @@
 *   **业务场景**：App 启动时自动在后台获取当前位置，用户切换到"我的"页面时无需等待即看到地址信息。
 *   **技术实现**：`MainActivity` 启动时自动调用 `requestSingleLocation()`（如已授权）。`LocationHelper` 通过 LiveData 广播结果，`MineFragment` 观察并显示地址、坐标、精度。15 秒超时自动降级到上次已知位置。
 
+### 5.8 桌面角标 (Launcher Badge)
+*   **业务场景**：用户无需打开应用即可在桌面图标上看到当前未完成待办数量。
+*   **技术实现**：`BadgeHelper` 通过 `TodoProvider` 的 `/todos/pending/count` URI 查询未完成待办数，以无声常驻通知（`setNumber(count)` + `VISIBILITY_SECRET`）驱动桌面角标显示。待办增删或完成时自动刷新。
+    *   **数据通路**：`TodoFragment` / `EditTodoActivity` → `BadgeHelper.refresh()` → `ContentResolver.query(/todos/pending/count)` → 通知栏 `setNumber()`。
+    *   **静默更新**：通知使用 `VISIBILITY_SECRET` 级别，不在通知栏显示，仅驱动启动器角标。
+
 ---
 
 ## 6. 数据结构与持久化设计
 
-应用涉及的数据表结构共七张核心表：
+应用涉及的数据表结构共六张核心表：
 
 ### 6.1 待办数据表 (todo_item)
 | 字段名 | 类型 | 约束 | 说明 |
@@ -249,17 +259,7 @@
 
 唯一索引：`(habit_id, date_stamp, user_id)`
 
-### 6.4 习惯打卡表（新版）(habit_checkin)
-| 字段名 | 类型 | 约束 | 说明 |
-|:---|:---|:---|:---|
-| `id` | LONG | PRIMARY KEY AUTOINCREMENT | 主键 ID |
-| `habitId` | LONG | NOT NULL | 关联习惯 ID |
-| `dateStamp` | LONG | NOT NULL | 日期标记 |
-| `isCompleted` | BOOLEAN | DEFAULT true | 完成状态 |
-
-唯一索引：`(habitId, dateStamp)`
-
-### 6.5 番茄钟任务表 (pomodoro_task)
+### 6.4 番茄钟任务表 (pomodoro_task)
 | 字段名 | 类型 | 约束 | 说明 |
 |:---|:---|:---|:---|
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 主键 ID |
@@ -269,7 +269,7 @@
 | `create_time` | LONG | | 创建时间 |
 | `user_id` | TEXT | DEFAULT '' | 所属用户 |
 
-### 6.6 番茄钟会话表 (pomodoro_session)
+### 6.5 番茄钟会话表 (pomodoro_session)
 | 字段名 | 类型 | 约束 | 说明 |
 |:---|:---|:---|:---|
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 主键 ID |
@@ -279,7 +279,7 @@
 | `completed` | INTEGER | DEFAULT 0 (0/1) | 是否完成 |
 | `user_id` | TEXT | DEFAULT '' | 所属用户 |
 
-### 6.7 聊天消息表 (chat_message)
+### 6.6 聊天消息表 (chat_message)
 | 字段名 | 类型 | 约束 | 说明 |
 |:---|:---|:---|:---|
 | `id` | INTEGER | PRIMARY KEY AUTOINCREMENT | 主键 ID |
@@ -288,7 +288,7 @@
 | `timestamp` | LONG | | 时间戳 |
 | `session_id` | TEXT | NOT NULL | 会话标识（格式：`ai_chat_<userId>`） |
 
-### 6.8 其他持久化数据
+### 6.7 其他持久化数据
 
 | 数据 | 存储方式 | 说明 |
 |:---|:---|:---|
@@ -379,7 +379,7 @@ SplashActivity (启动页, 2.5s)
 | 类别 | 技术 |
 |:---|:---|
 | **语言** | Java, Kotlin |
-| **UI 框架** | Jetpack Compose + Material 3, ViewBinding, ConstraintLayout, RecyclerView |
+| **UI 框架** | Jetpack Compose + Material 3, ConstraintLayout, RecyclerView (XML 布局为主) |
 | **架构** | Room, SharedPreferences, ViewPager2, Fragment, LiveData (Location) |
 | **后台** | Foreground Service, AlarmManager, BroadcastReceiver, CountDownTimer |
 | **网络** | Retrofit 2 + OkHttp + Gson |

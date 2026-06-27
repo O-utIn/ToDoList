@@ -49,7 +49,7 @@
 │
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     数据源与支撑层 (Data Layer)                       │
-│  Room/SQLite (7 entities)      │ SharedPreferences (config/session) │
+│  Room/SQLite (6 entities)      │ SharedPreferences (config/session) │
 │  ContentProvider (TodoProvider) │ File Storage (JSON backup)        │
 │  Retrofit + OkHttp (DeepSeek)  │ Android Keystore (AES-256/GCM)    │
 │  FusedLocationProviderClient   │ AlarmManager                      │
@@ -61,8 +61,8 @@
 | 类别 | 技术 |
 |:---|:---|
 | **语言** | Java, Kotlin |
-| **UI** | Jetpack Compose + Material 3, ViewBinding, ConstraintLayout, RecyclerView |
-| **架构** | Room, ViewModel, LiveData, Fragment, ViewPager2 |
+| **UI** | Jetpack Compose + Material 3, ConstraintLayout, RecyclerView (XML 布局为主) |
+| **架构** | Room, ViewModel, LiveData, Fragment, ViewPager2, SharedPreferences |
 | **后台** | Foreground Service (`specialUse`), AlarmManager, BroadcastReceiver, CountDownTimer |
 | **网络** | Retrofit 2 + OkHttp + Gson (DeepSeek compatible API) |
 | **安全** | Android Keystore AES-256/GCM, SHA-256 |
@@ -82,9 +82,13 @@ ToDoList/
 │   │   │   ├── ChatApi.java            #   Retrofit 接口
 │   │   │   ├── ChatRequest.java        #   请求体
 │   │   │   ├── ChatResponse.java       #   响应体
+│   │   │   ├── AiClient.java           #   旧版 AI 客户端 (兼容保留)
+│   │   │   ├── AiApi.java              #   旧版 AI 接口
+│   │   │   ├── AiParseRequest.java     #   旧版 AI 解析请求
+│   │   │   ├── AiParseResponse.java    #   旧版 AI 解析响应
 │   │   │   ├── CommandParser.java      #   [CMD] 协议解析与执行器 (12 种操作)
 │   │   │   └── recommendation/
-│   │   │       └── RecommendationEngine.java  # 规则推荐引擎
+│   │   │       └── RecommendationEngine.java  # 5-规则推荐引擎
 │   │   ├── adapter/                    # RecyclerView 适配器
 │   │   │   ├── HabitAdapter.java
 │   │   │   ├── TodoAdapter.java
@@ -100,11 +104,11 @@ ToDoList/
 │   │   │   │   ├── PomodoroTaskDao.java
 │   │   │   │   ├── PomodoroSessionDao.java
 │   │   │   │   └── ChatMessageDao.java
-│   │   │   └── entity/                 # 7 个实体类
+│   │   │   └── entity/                 # 6 个 Room 实体 (+ 1 个预留)
 │   │   │       ├── TodoItem.java
 │   │   │       ├── HabitItem.java      #   含 schedule_config JSON 解析
 │   │   │       ├── HabitCheck.java
-│   │   │       ├── HabitCheckin.java
+│   │   │       ├── HabitCheckin.java   #   预留实体 (未注册 @Database)
 │   │   │       ├── PomodoroTask.java
 │   │   │       ├── PomodoroSession.java
 │   │   │       └── ChatMessage.java
@@ -116,7 +120,9 @@ ToDoList/
 │   │   │   ├── DiscoverFragment.java   #   ChatFragment 容器
 │   │   │   └── MineFragment.java       #   个人中心 (统计+定位+备份)
 │   │   ├── provider/
-│   │   │   └── TodoProvider.java       # ContentProvider (跨进程数据共享)
+│   │   │   └── TodoProvider.java       # ContentProvider (4 个 URI 跨进程共享)
+│   │   ├── widget/
+│   │   │   └── BadgeHelper.java        # 桌面角标 (静默通知驱动)
 │   │   ├── receiver/
 │   │   │   ├── ForceOfflineReceiver.java       # 强制下线广播
 │   │   │   ├── DailyReminderReceiver.java      # 每日提醒广播
@@ -133,6 +139,7 @@ ToDoList/
 │   │   │   ├── DateUtils.java          # 日期工具 (java.time)
 │   │   │   └── UserSession.java        # 当前用户读取
 │   │   ├── MainActivity.java           # 主 Activity (底部导航 + 自动定位)
+│   │   ├── ToDoListApplication.java    # Application 子类
 │   │   ├── LoginActivity.java          # 登录/注册
 │   │   ├── LockActivity.java           # 密码锁
 │   │   ├── SplashActivity.java         # 启动页 (励志语录)
@@ -212,7 +219,7 @@ App 内置一套命令协议，AI 在回复中嵌入 `[CMD]{"action":"...","参�
 
 ### 本地智能推荐引擎
 
-基于规则评分（时间槽匹配 ×2.0 + 历史完成率 ×3.0 + 今日未打卡奖励 ×1.0），在设备本地实时推荐最适合当前时段的习惯，无需联网。
+基于 5 条规则评分（时间槽匹配 ±2.0 + 7 天完成率 ±3.0 + 连续打卡加成 + 荒废惩罚 + 今日已完成排除），在设备本地实时推荐最适合当前时段的习惯（硬上限 2 项，评分 ≥ 1.0 入选），无需联网。
 
 ### 番茄钟前台服务
 
@@ -235,7 +242,11 @@ App 启动时自动在后台获取当前位置。切换到"我的"页面时，�
 
 ### ContentProvider 跨进程共享
 
-`TodoProvider` (authority: `com.example.todolist.provider`) 暴露待办列表和计数，供其他应用查询。
+`TodoProvider` (authority: `com.example.todolist.provider`) 暴露 4 个查询端点：`/todos`、`/todos/count`、`/todos/pending`、`/todos/pending/count`，供其他应用和桌面角标查询待办数据。
+
+### 桌面角标 (Launcher Badge)
+
+`BadgeHelper` 通过 `TodoProvider` 查询未完成待办数，以无声常驻通知（`setNumber` + `VISIBILITY_SECRET`）驱动桌面图标角标。待办增删或完成时自动刷新，无需打开应用即可看到待办数量。
 
 ---
 
@@ -246,12 +257,11 @@ App 启动时自动在后台获取当前位置。切换到"我的"页面时，�
 | `todo_item` | `TodoItem` | 待办事项 | title, priority(1-3), due_date, is_completed |
 | `habit_item` | `HabitItem` | 习惯元数据 | name, schedule_config (JSON), frequency, color |
 | `habit_check` | `HabitCheck` | 每日打卡 | habit_id, date_stamp (yyyyMMdd), checked |
-| `habit_checkin` | `HabitCheckin` | 打卡 (新版) | habitId, dateStamp, isCompleted |
 | `pomodoro_task` | `PomodoroTask` | 番茄任务 | name, duration_minutes |
 | `pomodoro_session` | `PomodoroSession` | 番茄会话 | task_id (FK), start_time, end_time, completed |
 | `chat_message` | `ChatMessage` | AI 聊天 | content, type(0=AI/1=user), session_id |
 
-所有数据表均带 `user_id` 字段实现多用户数据隔离。数据库使用 `fallbackToDestructiveMigration` 策略，当前版本 v9。
+所有数据表均带 `user_id` 字段实现多用户数据隔离。数据库使用双检锁单例模式，`fallbackToDestructiveMigration` 策略，当前版本 v9。
 
 ---
 
