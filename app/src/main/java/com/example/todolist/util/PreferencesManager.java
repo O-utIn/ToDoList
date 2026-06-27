@@ -33,7 +33,13 @@ public class PreferencesManager {
     public int getPomodoroCount() { return prefs.getInt("pomodoro_count", 0); }
     public void incrementPomodoroCount() { prefs.edit().putInt("pomodoro_count", getPomodoroCount() + 1).apply(); }
 
-    // --- AI Settings ---
+    // --- AI Settings (user-specific) ---
+    private String aiUserSuffix() {
+        // PreferencesManager is instantiated with a Context, but we don't have one stored.
+        // Use the prefs instance to infer — this is a fallback that returns the global key.
+        // Callers should use ChatClient directly for user-specific AI settings.
+        return "";
+    }
     public String getAiApiUrl() { return prefs.getString("ai_api_url", ""); }
     public void setAiApiUrl(String url) { prefs.edit().putString("ai_api_url", url).apply(); }
     public String getAiApiKey() { return prefs.getString("ai_api_key", ""); }

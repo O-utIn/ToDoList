@@ -325,6 +325,10 @@ public class HabitFragment extends Fragment {
                 if (c.habit_id == item.id) db.habitCheckDao().delete(c);
             }
             db.habitDao().delete(item);
+            // Refresh calendar badge counts after deletion
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> refreshCalendarCounts());
+            }
         });
         Snackbar.make(rootView, getString(R.string.deleted), Snackbar.LENGTH_LONG)
             .setAction(getString(R.string.undo), view -> {
@@ -332,7 +336,10 @@ public class HabitFragment extends Fragment {
                     long newId = AppDatabase.getInstance(ctx).habitDao().insert(item);
                     item.id = newId;
                     if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> habitAdapter.insertAt(pos, item));
+                        getActivity().runOnUiThread(() -> {
+                            habitAdapter.insertAt(pos, item);
+                            refreshCalendarCounts();
+                        });
                     }
                 });
             }).show();

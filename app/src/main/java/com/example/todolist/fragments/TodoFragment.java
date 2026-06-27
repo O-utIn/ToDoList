@@ -281,6 +281,10 @@ public class TodoFragment extends Fragment {
         exec.execute(() -> {
             AppDatabase.getInstance(ctx).todoDao().delete(item);
             com.example.todolist.widget.BadgeHelper.refresh(ctx);
+            // Refresh calendar badge counts after deletion
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> refreshCalendarCounts());
+            }
         });
         Snackbar.make(rootView, getString(R.string.deleted), Snackbar.LENGTH_LONG)
             .setAction(getString(R.string.undo), view -> {
@@ -289,7 +293,10 @@ public class TodoFragment extends Fragment {
                     item.id = newId;
                     com.example.todolist.widget.BadgeHelper.refresh(ctx);
                     if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> todoAdapter.insertAt(pos, item));
+                        getActivity().runOnUiThread(() -> {
+                            todoAdapter.insertAt(pos, item);
+                            refreshCalendarCounts();
+                        });
                     }
                 });
             }).show();

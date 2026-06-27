@@ -20,4 +20,8 @@ public interface HabitCheckDao {
 
     @Query("SELECT * FROM habit_check WHERE date_stamp = :dateStamp AND (user_id = :userId OR user_id = '')")
     List<HabitCheck> getByDate(long dateStamp, String userId);
+
+    /** Get all check-in records for a specific user (used by backup). */
+    @Query("SELECT * FROM habit_check WHERE user_id = :userId")
+    List<HabitCheck> getByUser(String userId);
 }

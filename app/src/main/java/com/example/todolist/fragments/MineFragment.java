@@ -213,7 +213,7 @@ public class MineFragment extends Fragment {
                         try {
                             updateStatView(v, R.id.stat_habits, habitCount, "习惯");
                             updateStatView(v, R.id.stat_todos, todoCount, "待办");
-                            updateStatView(v, R.id.stat_pomodoros, pomodoroCount, "专注");
+                            updateStatView(v, R.id.stat_pomodoros, pomodoroCount, "专注完成次数");
                         } catch (Exception ignored) {}
                     });
                 }
@@ -279,18 +279,21 @@ public class MineFragment extends Fragment {
         com.google.android.material.textfield.TextInputEditText input =
                 dialogView.findViewById(R.id.edit_api_key);
 
-        String existing = prefs.getString("deepseek_api_key", "");
+        // Read the current user's API key (user-specific)
+        Context ctx = getContext();
+        String prefKey = com.example.todolist.ai.ChatClient.getKeyPrefName(ctx);
+        String existing = prefs.getString(prefKey, "");
         if (!existing.isEmpty()) input.setText(existing);
 
-        new AlertDialog.Builder(getContext())
+        new AlertDialog.Builder(ctx)
                 .setTitle("设置 DeepSeek API Key")
                 .setView(dialogView)
                 .setPositiveButton("保存", (d, w) -> {
                     String key = input.getText().toString().trim();
                     if (!android.text.TextUtils.isEmpty(key)) {
-                        prefs.edit().putString("deepseek_api_key", key).apply();
+                        prefs.edit().putString(prefKey, key).apply();
                         com.example.todolist.ai.ChatClient.resetInstance();
-                        Toast.makeText(getContext(), "API Key 已保存", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ctx, "API Key 已保存", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("取消", null)

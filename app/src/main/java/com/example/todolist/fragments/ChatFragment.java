@@ -120,6 +120,7 @@ public class ChatFragment extends Fragment {
         prefs = ctx.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         exec = Executors.newSingleThreadExecutor();
         handler = new Handler(Looper.getMainLooper());
+        currentUserId = com.example.todolist.util.UserSession.getCurrentUser(appCtx);
 
         recyclerChat = v.findViewById(R.id.recycler_chat);
         etInput = v.findViewById(R.id.et_chat_input);
@@ -156,12 +157,25 @@ public class ChatFragment extends Fragment {
         // Load history
         loadMessages();
 
-        // Check API key
+        // Check API key — lock down chat if not configured
         if (!ChatClient.isConfigured(ctx)) {
+            setChatEnabled(false);
             showApiKeyDialog();
         }
 
         return v;
+    }
+
+    /** Enable or disable the chat input area based on API key status. */
+    private void setChatEnabled(boolean enabled) {
+        if (etInput != null) {
+            etInput.setEnabled(enabled);
+            etInput.setHint(enabled ? "输入消息..." : "请先设置 API Key");
+        }
+        if (btnSend != null) {
+            btnSend.setEnabled(enabled);
+            btnSend.setText(enabled ? "发送" : "设置Key");
+        }
     }
 
     // ---- Clear / Delete ----
@@ -223,15 +237,15 @@ public class ChatFragment extends Fragment {
     // ---- Send message + AI reply ----
 
     private void sendMessage() {
-        String text = etInput.getText().toString().trim();
-        if (text.isEmpty()) {
-            Toast.makeText(getContext(), "请输入消息内容", Toast.LENGTH_SHORT).show();
+        // Check API configuration FIRST — if no key, show dialog regardless of input
+        if (!ChatClient.isConfigured(requireContext())) {
+            showApiKeyDialog();
             return;
         }
 
-        // Check API configuration
-        if (!ChatClient.isConfigured(requireContext())) {
-            showApiKeyDialog();
+        String text = etInput.getText().toString().trim();
+        if (text.isEmpty()) {
+            Toast.makeText(getContext(), "请输入消息内容", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -449,6 +463,20 @@ public class ChatFragment extends Fragment {
             currentUserId = uid;
             // Clear UI and reload for the new user
             handler.post(() -> chatAdapter.setMessages(null));
+            // Reset chat state for new user
+            if (!ChatClient.isConfigured(appCtx)) {
+                handler.post(() -> {
+                    setChatEnabled(false);
+                    showApiKeyDialog();
+                });
+            } else {
+                handler.post(() -> setChatEnabled(true));
+            }
+        } else {
+            // Same user — ensure UI matches key state (user may have set it via Mine tab)
+            if (ChatClient.isConfigured(appCtx)) {
+                setChatEnabled(true);
+            }
         }
         loadMessages();
     }
@@ -482,21 +510,31 @@ public class ChatFragment extends Fragment {
         com.google.android.material.textfield.TextInputEditText input =
                 dialogView.findViewById(R.id.edit_api_key);
 
-        String existing = prefs.getString("deepseek_api_key", "");
+        // Read the current user's API key (user-specific)
+        Context ctx = getContext();
+        String prefKey = ChatClient.getKeyPrefName(ctx);
+        String existing = prefs.getString(prefKey, "");
         if (!existing.isEmpty()) input.setText(existing);
 
-        new android.app.AlertDialog.Builder(getContext())
+        new android.app.AlertDialog.Builder(ctx)
                 .setTitle("设置 DeepSeek API Key")
+                .setMessage("请配置您的 DeepSeek API Key 以使用智能助手功能。\n\n获取方式：访问 platform.deepseek.com 注册并获取 API Key。")
                 .setView(dialogView)
+                .setCancelable(false)
                 .setPositiveButton("保存", (d, w) -> {
                     String key = input.getText().toString().trim();
                     if (!TextUtils.isEmpty(key)) {
-                        prefs.edit().putString("deepseek_api_key", key).apply();
+                        prefs.edit().putString(prefKey, key).apply();
                         ChatClient.resetInstance();
-                        Toast.makeText(getContext(), "API Key 已保存", Toast.LENGTH_SHORT).show();
+                        setChatEnabled(true);
+                        Toast.makeText(ctx, "API Key 已保存", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(ctx, "API Key 不能为空", Toast.LENGTH_SHORT).show();
                     }
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton("取消", (d, w) -> {
+                    Toast.makeText(ctx, "未设置 API Key，无法使用智能助手", Toast.LENGTH_LONG).show();
+                })
                 .show();
     }
 
