@@ -171,9 +171,20 @@ public class BackupManager {
      * then restores from the backup file.
      */
     public static void importFromFile(Context ctx, File file) throws Exception {
+        // Read entire file into a byte array (properly, with a loop)
         byte[] data = new byte[(int) file.length()];
-        try (FileInputStream fis = new FileInputStream(file)) { fis.read(data); }
+        try (FileInputStream fis = new FileInputStream(file)) {
+            int offset = 0;
+            int remaining = data.length;
+            while (remaining > 0) {
+                int read = fis.read(data, offset, remaining);
+                if (read < 0) break; // EOF
+                offset += read;
+                remaining -= read;
+            }
+        }
         String s = new String(data, StandardCharsets.UTF_8);
+        Log.d(TAG, "Restoring from file: " + file.getName() + " (" + data.length + " bytes)");
         restoreFromJson(ctx, s);
     }
 
@@ -189,6 +200,7 @@ public class BackupManager {
                 sb.append(new String(buf, 0, n, StandardCharsets.UTF_8));
             }
         }
+        Log.d(TAG, "Restoring from URI: " + uri + " (" + sb.length() + " chars)");
         restoreFromJson(ctx, sb.toString());
     }
 
@@ -204,89 +216,111 @@ public class BackupManager {
 
     // ── Internal restore ──
 
+    /**
+     * Helper: reads a string value from JSON, handling JSON null properly.
+     * JSONObject.optString() returns the literal string "null" for JSON null values.
+     */
+    private static String safeOptString(JSONObject o, String key, String defaultValue) {
+        if (o.isNull(key)) return defaultValue;
+        String val = o.optString(key, defaultValue);
+        // Guard against the string "null" being returned for actual null
+        if ("null".equals(val)) return defaultValue;
+        return val;
+    }
+
     private static void restoreFromJson(Context ctx, String json) throws Exception {
         JSONObject root = new JSONObject(json);
         final String currentUser = UserSession.getCurrentUser(ctx);
         AppDatabase db = AppDatabase.getInstance(ctx);
 
-        // ---- Clear current user's existing data first (prevents duplicates) ----
-        // Delete habit checks for this user
-        List<HabitCheck> userChecks = db.habitCheckDao().getByUser(currentUser);
-        for (HabitCheck c : userChecks) db.habitCheckDao().delete(c);
+        Log.d(TAG, "Restoring backup for user '" + currentUser + "', "
+            + "export_version=" + root.optInt("export_version", 1)
+            + ", backup_user=" + root.optString("user", "unknown"));
 
-        // Delete habits for this user
-        List<HabitItem> userHabits = db.habitDao().getByUser(currentUser);
-        for (HabitItem h : userHabits) db.habitDao().delete(h);
+        // ── Wrap clear + restore in a single Room transaction for atomicity ──
+        db.runInTransaction(() -> {
+            try {
+                // ---- Clear current user's existing data first (prevents duplicates) ----
+                List<HabitCheck> userChecks = db.habitCheckDao().getByUser(currentUser);
+                for (HabitCheck c : userChecks) db.habitCheckDao().delete(c);
 
-        // Delete todos for this user
-        List<TodoItem> userTodos = db.todoDao().getByUser(currentUser);
-        for (TodoItem t : userTodos) db.todoDao().delete(t);
+                List<HabitItem> userHabits = db.habitDao().getByUser(currentUser);
+                for (HabitItem h : userHabits) db.habitDao().delete(h);
 
-        Log.d(TAG, "Cleared existing data for user '" + currentUser + "': "
-            + userTodos.size() + " todos, " + userHabits.size() + " habits, "
-            + userChecks.size() + " checks");
+                List<TodoItem> userTodos = db.todoDao().getByUser(currentUser);
+                for (TodoItem t : userTodos) db.todoDao().delete(t);
 
-        // ---- Restore todos ----
-        JSONArray jtodos = root.optJSONArray("todos");
-        if (jtodos != null) {
-            for (int i = 0; i < jtodos.length(); i++) {
-                JSONObject o = jtodos.getJSONObject(i);
-                String title = o.optString("title", "");
-                String note = o.optString("note", "");
-                long due = o.optLong("due_date", 0L);
-                int is_completed = o.optInt("is_completed", 0);
-                int priority = o.optInt("priority", 1);
-                String userId = o.optString("user_id", "");
+                Log.d(TAG, "Cleared existing data for user '" + currentUser + "': "
+                    + userTodos.size() + " todos, " + userHabits.size() + " habits, "
+                    + userChecks.size() + " checks");
 
-                TodoItem t = new TodoItem(title, note, due, is_completed, priority);
-                // Always assign to current user on restore (ignore source user)
-                t.user_id = currentUser;
-                db.todoDao().insert(t);
+                // ---- Restore todos ----
+                JSONArray jtodos = root.optJSONArray("todos");
+                if (jtodos != null) {
+                    for (int i = 0; i < jtodos.length(); i++) {
+                        JSONObject o = jtodos.getJSONObject(i);
+                        String title = safeOptString(o, "title", "");
+                        String note = safeOptString(o, "note", "");
+                        long due = o.optLong("due_date", 0L);
+                        int is_completed = o.optInt("is_completed", 0);
+                        int priority = o.optInt("priority", 1);
+
+                        TodoItem t = new TodoItem(title, note, due, is_completed, priority);
+                        t.user_id = currentUser;
+                        db.todoDao().insert(t);
+                    }
+                }
+
+                // ---- Restore habits (with ID mapping for check-ins) ----
+                java.util.Map<Long, Long> habitIdMap = new java.util.HashMap<>();
+
+                JSONArray jhabits = root.optJSONArray("habits");
+                if (jhabits != null) {
+                    for (int i = 0; i < jhabits.length(); i++) {
+                        JSONObject o = jhabits.getJSONObject(i);
+                        long oldId = o.optLong("id", 0);
+
+                        String name = safeOptString(o, "name", "");
+                        String desc = safeOptString(o, "description", "");
+                        String icon = safeOptString(o, "icon_res", "");
+                        String freq = safeOptString(o, "frequency", "每日");
+                        String color = safeOptString(o, "color", "#FFD54F");
+                        String schedCfg = safeOptString(o, "schedule_config", "{\"mode\":\"daily\"}");
+                        long create = o.optLong("create_time", System.currentTimeMillis());
+
+                        HabitItem h = new HabitItem(name, desc, icon, freq, color, schedCfg, create);
+                        h.user_id = currentUser;
+                        long newId = db.habitDao().insert(h);
+                        if (oldId > 0) habitIdMap.put(oldId, newId);
+                    }
+                }
+
+                // ---- Restore habit check-ins (map old habit IDs to new ones) ----
+                JSONArray jchecks = root.optJSONArray("habit_checks");
+                if (jchecks != null) {
+                    for (int i = 0; i < jchecks.length(); i++) {
+                        JSONObject o = jchecks.getJSONObject(i);
+                        long oldHabitId = o.optLong("habit_id", 0);
+                        long dateStamp = o.optLong("date_stamp", 0);
+                        int checked = o.optInt("checked", 0);
+
+                        Long newHabitId = habitIdMap.get(oldHabitId);
+                        if (newHabitId == null) continue;
+
+                        HabitCheck c = new HabitCheck(newHabitId, dateStamp, checked);
+                        c.user_id = currentUser;
+                        db.habitCheckDao().insert(c);
+                    }
+                }
+
+                Log.d(TAG, "Restore complete: "
+                    + (jtodos != null ? jtodos.length() : 0) + " todos, "
+                    + (jhabits != null ? jhabits.length() : 0) + " habits, "
+                    + (jchecks != null ? jchecks.length() : 0) + " checks");
+            } catch (Exception e) {
+                Log.e(TAG, "Restore failed", e);
+                throw new RuntimeException("恢复失败: " + e.getMessage(), e);
             }
-        }
-
-        // ---- Restore habits ----
-        // Build a mapping from old habit ID → new habit ID for check-in restoration
-        java.util.Map<Long, Long> habitIdMap = new java.util.HashMap<>();
-
-        JSONArray jhabits = root.optJSONArray("habits");
-        if (jhabits != null) {
-            for (int i = 0; i < jhabits.length(); i++) {
-                JSONObject o = jhabits.getJSONObject(i);
-                long oldId = o.optLong("id", 0);
-
-                String name = o.optString("name", "");
-                String desc = o.optString("description", "");
-                String icon = o.optString("icon_res", "");
-                String freq = o.optString("frequency", "每日");
-                String color = o.optString("color", "#FFD54F");
-                String schedCfg = o.optString("schedule_config", "{\"mode\":\"daily\"}");
-                long create = o.optLong("create_time", System.currentTimeMillis());
-
-                HabitItem h = new HabitItem(name, desc, icon, freq, color, schedCfg, create);
-                h.user_id = currentUser;
-                long newId = db.habitDao().insert(h);
-                if (oldId > 0) habitIdMap.put(oldId, newId);
-            }
-        }
-
-        // ---- Restore habit check-ins (map old habit IDs to new ones) ----
-        JSONArray jchecks = root.optJSONArray("habit_checks");
-        if (jchecks != null) {
-            for (int i = 0; i < jchecks.length(); i++) {
-                JSONObject o = jchecks.getJSONObject(i);
-                long oldHabitId = o.optLong("habit_id", 0);
-                long dateStamp = o.optLong("date_stamp", 0);
-                int checked = o.optInt("checked", 0);
-
-                // Map old habit ID to new habit ID
-                Long newHabitId = habitIdMap.get(oldHabitId);
-                if (newHabitId == null) continue; // habit wasn't restored, skip check-in
-
-                HabitCheck c = new HabitCheck(newHabitId, dateStamp, checked);
-                c.user_id = currentUser;
-                db.habitCheckDao().insert(c);
-            }
-        }
+        });
     }
 }

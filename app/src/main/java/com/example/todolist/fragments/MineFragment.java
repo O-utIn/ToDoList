@@ -364,6 +364,7 @@ public class MineFragment extends Fragment {
                             Toast.makeText(getContext(), "恢复完成", Toast.LENGTH_SHORT).show();
                             View root = getView();
                             if (root != null) loadStats(root);
+                            dialog.dismiss();
                         });
                     }
                 } catch (Exception e) {
