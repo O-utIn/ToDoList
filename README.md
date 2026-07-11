@@ -16,7 +16,7 @@
 
 本项目为《移动互联网应用》课程设计作品，涵盖了 Android 开发中的多项核心技术。
 
-[点击下载试用安装包 app-debug.apk]([./app-debug.apk](https://raw.githubusercontent.com/O-utIn/ToDoList/master/app-debug.apk))进行试用
+[点击下载apk在安卓设备上进行试用](https://raw.githubusercontent.com/O-utIn/ToDoList/master/app-debug.apk)
 
 ### 五大板块
 
