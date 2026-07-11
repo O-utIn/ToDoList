@@ -6,7 +6,6 @@
 
 <p align="center">
   一款面向学生与职场人士的极简风 Android 时间管理工具，融合四大效率模块与 DeepSeek AI 自然语言操作。
-  可直接下载安装app-debug.apk进行试用
 </p>
 
 ---
